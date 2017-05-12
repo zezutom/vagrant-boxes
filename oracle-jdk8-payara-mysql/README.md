@@ -12,4 +12,4 @@ Access to Payara from the host environment: https://localhost:14848 (admin / adm
 ## Installation
 1. Clone this repo
 2. ```cd``` to oracle-jdk8-payara-mysql
-3. Run ```vagrant init``` to bootstrap an ubuntu/trusty64 box with Java 8, Payara and MySQL
+3. Run ```vagrant up``` to bootstrap an ubuntu/trusty64 box with Java 8, Payara and MySQL
