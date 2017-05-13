@@ -7,7 +7,9 @@ VirtualBox
 * Payara 4.1
 * MySQL 5.6
 
-Access to Payara from the host environment: https://localhost:14848 (admin / admin)
+## Access from Host Environment
+* Payara: https://localhost:14848 (admin / admin)
+* MySQL:  jdbc:mysql://localhost:13306 (root / root) 
 
 ## Installation
 1. Clone this repo
