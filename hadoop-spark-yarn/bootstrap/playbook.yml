@@ -1,0 +1,68 @@
+---
+- hosts: all
+  become: true 
+  vars:
+    hadoop_version: 2.8.0
+    hadoop_repo: http://www-eu.apache.org/dist/hadoop/common 
+    hadoop_install_dir: /opt
+    hadoop_user: vagrant
+    hadoop_group: vagrant
+    hadoop_config_remote_dir: /vagrant/bootstrap/config/hadoop
+  environment:
+    JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64/jre 
+  tasks:
+    - name: accept new ssh fingerprints from localhost
+      shell: ssh-keyscan -H 127.0.0.1 >> ~/.ssh/known_hosts
+    - name: ensure apt is of the latest version 
+      apt: upgrade=yes
+    - name: install openjdk repo (java 8 isn't available in the main repo)
+      apt_repository: repo='ppa:openjdk-r/ppa'
+    - name: install openjdk-8 
+      apt: 
+        name: openjdk-8-jdk 
+        state: latest
+        install_recommends: no
+    - name: download and extract hadoop package
+      unarchive: 
+        src: '{{ hadoop_repo }}/hadoop-{{ hadoop_version }}/hadoop-{{ hadoop_version }}.tar.gz'
+        dest: "{{ hadoop_install_dir }}"
+        remote_src: True
+        owner: "{{ hadoop_user }}"
+        group: "{{ hadoop_group }}"
+    - name: clean up
+      file:
+        path: '{{ hadoop_install_dir }}/hadoop-{{ hadoop_version }}.tar.gz'
+        state: absent
+    - name: create link to the current version of hadoop 
+      file: 
+        src: '{{ hadoop_install_dir }}/hadoop-{{ hadoop_version }}' 
+        dest: '{{ hadoop_install_dir }}/hadoop' 
+        state: link 
+        owner: "{{ hadoop_user }}" 
+        group: "{{ hadoop_group }}" 
+    - name: ensure hadoop config dir exists
+      file:
+        dest: '{{ hadoop_install_dir }}/etc/hadoop/'
+        state: directory
+    - name: get file names to copy
+      command: 'find {{ hadoop_config_remote_dir }} -type f'
+      register: files_to_copy
+      changed_when: false
+    - name: copy hadoop config files
+      copy:
+        src: "{{ item }}" 
+        dest: '{{ hadoop_install_dir }}/etc/hadoop/'
+        owner: "{{ hadoop_user }}"
+        group: "{{ hadoop_group }}"
+        remote_src: True 
+      with_items:
+        - "{{ files_to_copy.stdout_lines }}"
+    - name: format hadoop name node
+      command: '{{ hadoop_install_dir }}/hadoop/bin/hdfs namenode -format'
+      become_user: "{{ hadoop_user }}"
+      notify: start yarn 
+
+  handlers:
+    - name: start yarn 
+      shell: '{{ hadoop_install_dir }}/hadoop/sbin/start-yarn.sh &'
+      become_user: "{{ hadoop_user }}"
